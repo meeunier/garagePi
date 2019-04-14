@@ -13,11 +13,11 @@ import const
 import logging
 
 LOG_DIR="/home/garage/garagePi/logs/"
-    
+
 ###############################################################################
 """
     This class sets up a web server and waits for messages. They are sent
-    from a service called twilio, they are sms messages. No messages are 
+    from a service called plivo, they are sms messages. No messages are
     processed here, only sent on to the main program.
 """
 class SMS_Monitor(MP.Process):
@@ -40,7 +40,7 @@ class SMS_Monitor(MP.Process):
     def validate_signature (self, uri, post_params, signature, auth_token):
         for k, v in sorted(post_params.items()):
             uri += k + v
-        s = base64.encodestring(hmac.new(auth_token, uri, 
+        s = base64.encodestring(hmac.new(auth_token, uri,
                 hashlib.sha1).digest()).strip()
         return s == signature
 
@@ -49,7 +49,7 @@ class SMS_Monitor(MP.Process):
     #--------------------------------------------------------------------------
     """
         This is the main logic for this object. It sits and waits for someone
-        to post (this would be twilio). When it posts, it's a SMS message. 
+        to post (this would be plivo). When it posts, it's a SMS message.
         Read the message and send to main process
     """
     def run(self):
@@ -58,7 +58,7 @@ class SMS_Monitor(MP.Process):
         log_name = "{0}|{1}".format(
                 self.__class__.__name__, sys._getframe().f_code.co_name)
         l.info("{0}: Name <{1}> Parent <l{2}> PID <{3}>".format(log_name,
-                MP.current_process().name, os.getppid(), 
+                MP.current_process().name, os.getppid(),
                 os.getpid()))
 
         app = Flask(__name__)
@@ -71,11 +71,11 @@ class SMS_Monitor(MP.Process):
         @app.route("/", methods=['GET', 'POST'])
         def get_message():
             try:
-                # This is the uri used by plivo. The port translation is from 
+                # This is the uri used by plivo. The port translation is from
                 # the gateway. The ddns is by ddns.net
                 #uri = "https://ifermon.ddns.net:6000/"
                 uri = "https://67.246.62.98:6000/"
-                self.l.info("Got message on {0}\nmsg: \"{1}\"".format(uri, 
+                self.l.info("Got message on {0}\nmsg: \"{1}\"".format(uri,
                         request.values))
 
                 # Validate the message
@@ -90,7 +90,7 @@ class SMS_Monitor(MP.Process):
 
                 signature = request.headers['X-Plivo-Signature']
                 self.l.debug("Checking signature hash is valid")
-                if not self.validate_signature(uri, request.form, signature, 
+                if not self.validate_signature(uri, request.form, signature,
                         const.auth_token):
                     # This is very bad. It may mean that someone is trying to hack
                     # the system. Shut it down.
